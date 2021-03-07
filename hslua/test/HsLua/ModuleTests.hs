@@ -1,5 +1,6 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications  #-}
 {-|
 Module      : HsLua.ModuleTests
 Copyright   : © 2019-2021 Albert Krewinkel
@@ -59,7 +60,11 @@ tests = testGroup "Module"
         Lua.openlibs
         preloadhs "test.module" (1 <$ Lua.pushstring testModule)
         pushLuaExpr "require 'test.module'"
+#if MIN_VERSION_lua(3,0,0)
+        Lua.tostring (Lua.nth 2)
+#else
         Lua.tostring Lua.top
+#endif
     ]
 
   , testGroup "creation helpers"

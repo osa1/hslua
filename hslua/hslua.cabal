@@ -95,6 +95,10 @@ test-suite test-hslua
                      , HsLua.UserdataTests
                      , HsLua.UtilTests
   build-depends:       hslua
+                     -- The lua package is needed only to check for it's
+                     -- version so we know whether to expect behavior of
+                     -- Lua 5.3 or Lua 5.4.
+                     , lua                  >= 2.0
                      , lua-arbitrary        >= 1.0
                      , QuickCheck           >= 2.7
                      , quickcheck-instances >= 0.3

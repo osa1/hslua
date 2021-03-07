@@ -24,7 +24,7 @@ embedded devices. This package provides Haskell bindings to Lua,
 enable coders to embed the language into their programs, making
 them scriptable.
 
-*Lua* ships with the official Lua interpreter, version 5.3.6.
+*Lua* ships with the official Lua interpreter, version 5.4.2.
 Cabal flags allow to compile against a system-wide Lua
 installation instead, if desired.
 

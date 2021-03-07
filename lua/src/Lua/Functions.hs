@@ -395,7 +395,7 @@ foreign import ccall SAFTY "lua.h lua_newthread"
 -- returns this address. The host program can freely use this memory.
 --
 -- <https://www.lua.org/manual/5.3/manual.html#lua_newuserdata>.
-foreign import ccall SAFTY "lua.h lua_newuserdata"
+foreign import capi SAFTY "lua.h lua_newuserdata"
   lua_newuserdata :: Lua.State -> CSize -> IO (Ptr ())
 
 -- | Calls a function in protected mode.

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-| Instances for QuickCheck's Arbitrary. -}
 module Lua.Arbitrary () where
@@ -32,7 +33,9 @@ instance Arbitrary Lua.StatusCode where
     , LUA_ERRRUN
     , LUA_ERRSYNTAX
     , LUA_ERRMEM
+#if !MIN_VERSION_lua(3,0,0)
     , LUA_ERRGCMM
+#endif
     , LUA_ERRERR
     , LUA_ERRFILE
     ]

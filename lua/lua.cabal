@@ -5,7 +5,7 @@ synopsis:            Lua, an embeddable scripting language
 description:         This package provides bindings and types to bridge
                      Haskell and <https://www.lua.org/ Lua>.
                      .
-                     The full Lua interpreter version 5.3.6 is included.
+                     The full Lua interpreter version 5.4.2 is included.
                      Alternatively, a system-wide Lua installation can be
                      linked instead.
 homepage:            https://hslua.github.io/
@@ -19,7 +19,7 @@ copyright:           © 2007–2012 Gracjan Polak;
                      © 2017-2021 Albert Krewinkel
 category:            Foreign
 build-type:          Simple
-extra-source-files:  cbits/lua-5.3.6/*.h
+extra-source-files:  cbits/lua-5.4.2/*.h
                    , cbits/hslua/*.h
                    , README.md
                    , CHANGELOG.md
@@ -142,46 +142,45 @@ library
   include-dirs:        cbits/hslua
   if flag(system-lua) || flag(pkg-config)
     if flag(pkg-config)
-      pkgconfig-depends: lua5.3
+      pkgconfig-depends: lua5.4
     else
       extra-libraries:   lua
       includes:          lua.h
   else
-    include-dirs:        cbits/lua-5.3.6
-    c-sources:           cbits/lua-5.3.6/lapi.c
-                       , cbits/lua-5.3.6/lcode.c
-                       , cbits/lua-5.3.6/lctype.c
-                       , cbits/lua-5.3.6/ldebug.c
-                       , cbits/lua-5.3.6/ldo.c
-                       , cbits/lua-5.3.6/ldump.c
-                       , cbits/lua-5.3.6/lfunc.c
-                       , cbits/lua-5.3.6/lgc.c
-                       , cbits/lua-5.3.6/llex.c
-                       , cbits/lua-5.3.6/lmem.c
-                       , cbits/lua-5.3.6/lobject.c
-                       , cbits/lua-5.3.6/lopcodes.c
-                       , cbits/lua-5.3.6/lparser.c
-                       , cbits/lua-5.3.6/lstate.c
-                       , cbits/lua-5.3.6/lstring.c
-                       , cbits/lua-5.3.6/ltable.c
-                       , cbits/lua-5.3.6/ltm.c
-                       , cbits/lua-5.3.6/lundump.c
-                       , cbits/lua-5.3.6/lvm.c
-                       , cbits/lua-5.3.6/lzio.c
+    include-dirs:        cbits/lua-5.4.2
+    c-sources:           cbits/lua-5.4.2/lapi.c
+                       , cbits/lua-5.4.2/lcode.c
+                       , cbits/lua-5.4.2/lctype.c
+                       , cbits/lua-5.4.2/ldebug.c
+                       , cbits/lua-5.4.2/ldo.c
+                       , cbits/lua-5.4.2/ldump.c
+                       , cbits/lua-5.4.2/lfunc.c
+                       , cbits/lua-5.4.2/lgc.c
+                       , cbits/lua-5.4.2/llex.c
+                       , cbits/lua-5.4.2/lmem.c
+                       , cbits/lua-5.4.2/lobject.c
+                       , cbits/lua-5.4.2/lopcodes.c
+                       , cbits/lua-5.4.2/lparser.c
+                       , cbits/lua-5.4.2/lstate.c
+                       , cbits/lua-5.4.2/lstring.c
+                       , cbits/lua-5.4.2/ltable.c
+                       , cbits/lua-5.4.2/ltm.c
+                       , cbits/lua-5.4.2/lundump.c
+                       , cbits/lua-5.4.2/lvm.c
+                       , cbits/lua-5.4.2/lzio.c
 
-                       , cbits/lua-5.3.6/lauxlib.c
-                       , cbits/lua-5.3.6/lbaselib.c
-                       , cbits/lua-5.3.6/lbitlib.c
-                       , cbits/lua-5.3.6/lcorolib.c
-                       , cbits/lua-5.3.6/ldblib.c
-                       , cbits/lua-5.3.6/liolib.c
-                       , cbits/lua-5.3.6/lmathlib.c
-                       , cbits/lua-5.3.6/lstrlib.c
-                       , cbits/lua-5.3.6/loslib.c
-                       , cbits/lua-5.3.6/ltablib.c
-                       , cbits/lua-5.3.6/lutf8lib.c
-                       , cbits/lua-5.3.6/loadlib.c
-                       , cbits/lua-5.3.6/linit.c
+                       , cbits/lua-5.4.2/lauxlib.c
+                       , cbits/lua-5.4.2/lbaselib.c
+                       , cbits/lua-5.4.2/lcorolib.c
+                       , cbits/lua-5.4.2/ldblib.c
+                       , cbits/lua-5.4.2/liolib.c
+                       , cbits/lua-5.4.2/lmathlib.c
+                       , cbits/lua-5.4.2/loadlib.c
+                       , cbits/lua-5.4.2/loslib.c
+                       , cbits/lua-5.4.2/lstrlib.c
+                       , cbits/lua-5.4.2/ltablib.c
+                       , cbits/lua-5.4.2/lutf8lib.c
+                       , cbits/lua-5.4.2/linit.c
 
   if os(linux)
     cc-options:          -DLUA_USE_LINUX

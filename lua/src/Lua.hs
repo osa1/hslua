@@ -77,7 +77,6 @@ module Lua
   , pattern LUA_ERRRUN
   , pattern LUA_ERRSYNTAX
   , pattern LUA_ERRMEM
-  , pattern LUA_ERRGCMM
   , pattern LUA_ERRERR
   , pattern LUA_ERRFILE
 

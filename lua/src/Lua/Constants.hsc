@@ -33,7 +33,6 @@ module Lua.Constants
   , pattern LUA_ERRRUN
   , pattern LUA_ERRSYNTAX
   , pattern LUA_ERRMEM
-  , pattern LUA_ERRGCMM
   , pattern LUA_ERRERR
   , pattern LUA_ERRFILE
     -- * Relational operator codes
@@ -143,12 +142,6 @@ pattern LUA_ERRSYNTAX = StatusCode #{const LUA_ERRSYNTAX}
 -- message handler.
 pattern LUA_ERRMEM :: StatusCode
 pattern LUA_ERRMEM = StatusCode #{const LUA_ERRMEM}
-
--- | Error while running a @__gc@ metamethod. For such errors, Lua does
--- not call the message handler (as this kind of error typically has no
--- relation with the function being called).
-pattern LUA_ERRGCMM :: StatusCode
-pattern LUA_ERRGCMM = StatusCode #{const LUA_ERRGCMM}
 
 -- | Error while running the message handler.
 pattern LUA_ERRERR :: StatusCode
