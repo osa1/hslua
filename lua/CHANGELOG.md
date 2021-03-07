@@ -2,6 +2,10 @@
 
 `lua` uses [PVP Versioning][1].
 
+## lua 3.0.0
+
+Release pending.
+
 ## lua 2.0.0
 
 Release pending.

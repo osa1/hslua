@@ -31,7 +31,7 @@ source-repository head
 common common-options
   default-language:    Haskell2010
   build-depends:       base          >= 4.8    && < 5
-                     , lua           >= 2.0    && < 2.1
+                     , lua           >= 2.0    && < 3.1
                      , QuickCheck    >= 2.7    && < 3
   ghc-options:         -Wall
                        -Wincomplete-record-updates

@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                lua
-version:             2.0.0
+version:             3.0.0
 synopsis:            Lua, an embeddable scripting language
 description:         This package provides bindings and types to bridge
                      Haskell and <https://www.lua.org/ Lua>.
