@@ -29,7 +29,6 @@ module HsLua.Packaging.Function
   , FunctionDoc (..)
   , ParameterDoc (..)
   , FunctionResultDoc (..)
-  , render
     -- * Pushing to Lua
   , pushDocumentedFunction
     -- * Convenience functions
@@ -40,7 +39,7 @@ module HsLua.Packaging.Function
 
 import Control.Monad.Except
 import Data.Text (Text)
-import Data.Version (Version, showVersion)
+import Data.Version (Version)
 import HsLua.Core
 import HsLua.Marshalling
 import qualified Data.Text as T
@@ -226,48 +225,6 @@ infixl 8 <#>, =#>, #?, `since`
 -- | Inline version of @'updateFunctionDescription'@.
 (#?) :: DocumentedFunction e -> Text -> DocumentedFunction e
 (#?) = updateFunctionDescription
-
---
--- Render documentation
---
-
--- | Renders the documentation of a function as Markdown.
-render :: FunctionDoc -> Text
-render (FunctionDoc desc paramDocs resultDoc mVersion) =
-  let sinceTag = case mVersion of
-        Nothing -> mempty
-        Just version -> T.pack $ "\n\n*Since: " <> showVersion version <> "*"
-  in (if T.null desc
-      then ""
-      else desc <> sinceTag <> "\n\n") <>
-     renderParamDocs paramDocs <>
-     case resultDoc of
-       [] -> ""
-       rd -> "\nReturns:\n\n" <> T.intercalate "\n" (map renderResultDoc rd)
-
--- | Renders function parameter documentation as a Markdown blocks.
-renderParamDocs :: [ParameterDoc] -> Text
-renderParamDocs pds = "Parameters:\n\n" <>
-  T.intercalate "\n" (map renderParamDoc pds)
-
--- | Renders the documentation of a function parameter as a Markdown
--- line.
-renderParamDoc :: ParameterDoc -> Text
-renderParamDoc pd = mconcat
-  [ parameterName pd
-  ,  "\n:   "
-  , parameterDescription pd
-  , " (", parameterType pd, ")\n"
-  ]
-
--- | Renders the documentation of a function result as a Markdown list
--- item.
-renderResultDoc :: FunctionResultDoc -> Text
-renderResultDoc rd = mconcat
-  [ " - "
-  , functionResultDescription rd
-  , " (", functionResultType rd, ")\n"
-  ]
 
 --
 -- Push to Lua

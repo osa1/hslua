@@ -55,6 +55,7 @@ library
   exposed-modules:     HsLua.Packaging
                      , HsLua.Packaging.Function
                      , HsLua.Packaging.Module
+                     , HsLua.Packaging.Rendering
   hs-source-dirs:      src
   default-extensions:  LambdaCase
   other-extensions:    DeriveFunctor

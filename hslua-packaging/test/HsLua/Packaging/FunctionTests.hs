@@ -20,7 +20,6 @@ import Test.Tasty.HsLua ((=:), shouldBeResultOf)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit ((@=?))
 
-import qualified Data.Text as T
 import qualified HsLua.Core as Lua
 
 -- | Calling Haskell functions from Lua.
@@ -79,25 +78,6 @@ tests = testGroup "Call"
         Lua.setglobal "nroot"
         Lua.loadstring "return nroot(64, 6)" *> Lua.call 0 1
         peekRealFloat @Double Lua.top >>= force
-    ]
-  , testGroup "documentation"
-    [ "rendered docs" =:
-      (T.unlines
-       [ "Calculates the factorial of a positive integer."
-       , ""
-       , "*Since: 1.0.0*"
-       , ""
-       , "Parameters:"
-       , ""
-       , "n"
-       , ":   number for which the factorial is computed (integer)"
-       , ""
-       , "Returns:"
-       , ""
-       , " - factorial (integer)"
-       ]
-       @=?
-       render (functionDoc (factLuaAtIndex 0)))
     ]
 
   , testGroup "helpers"

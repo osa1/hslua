@@ -18,8 +18,6 @@ module HsLua.Packaging.Module
   , preloadModule
   , preloadModuleWithName
   , pushModule
-    -- * Documentation
-  , render
   )
 where
 
@@ -28,8 +26,6 @@ import Data.Text (Text)
 import HsLua.Packaging.Function (DocumentedFunction)
 import HsLua.Core
 import HsLua.Marshalling (pushText)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import qualified HsLua.Packaging.Function as Call
 
 #if !MIN_VERSION_base(4,12,0)
@@ -86,49 +82,3 @@ pushModule mdl = do
     pushText (fieldName field)
     fieldPushValue field
     rawset (nth 3)
-
--- | Renders module documentation as Markdown.
-render :: Module e -> Text
-render mdl =
-  let fields = moduleFields mdl
-  in T.unlines
-     [ "# " <> T.decodeUtf8 (fromName $ moduleName mdl)
-     , ""
-     , moduleDescription mdl
-     , if null (moduleFields mdl) then "" else renderFields fields
-     , "## Functions"
-     , ""
-     ]
-     <> T.intercalate "\n"
-        (map (uncurry renderFunctionDoc) (moduleFunctions mdl))
-
--- | Renders documentation of a function.
-renderFunctionDoc :: Text                  -- ^ name
-                  -> DocumentedFunction e  -- ^ function
-                  -> Text                  -- ^ function docs
-renderFunctionDoc name fn =
-  let fnDoc = Call.functionDoc fn
-  in T.intercalate "\n"
-     [ "### " <> name <> " (" <> renderFunctionParams fnDoc <> ")"
-     , ""
-     , Call.render fnDoc
-     ]
-
--- | Renders the parameter names of a function, separated by commas.
-renderFunctionParams :: Call.FunctionDoc -> Text
-renderFunctionParams fd =
-    T.intercalate ", "
-  . map Call.parameterName
-  $ Call.parameterDocs fd
-
--- | Render documentation for fields as Markdown.
-renderFields :: [Field e] -> Text
-renderFields fs =
-  if null fs
-  then mempty
-  else T.unlines $ map renderField fs
-
--- | Renders documentation for a single field.
-renderField :: Field e -> Text
-renderField f =
-  "### " <> fieldName f <> "\n\n" <> fieldDescription f <> "\n"

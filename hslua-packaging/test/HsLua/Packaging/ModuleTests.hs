@@ -13,13 +13,11 @@ Tests creating and loading of modules with Haskell.
 module HsLua.Packaging.ModuleTests (tests) where
 
 import HsLua.Marshalling (peekIntegral, pushIntegral)
-import HsLua.Packaging.Function hiding (render)
+import HsLua.Packaging.Function
 import HsLua.Packaging.Module
 import Test.Tasty.HsLua ((=:), pushLuaExpr, shouldBeResultOf)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit ((@=?))
 
-import qualified Data.Text as T
 import qualified HsLua.Core as Lua
 
 -- | Specifications for Attributes parsing functions.
@@ -85,28 +83,6 @@ tests = testGroup "Module"
              , "return mymath.factorial(4)"
              ]
         peekIntegral @Integer Lua.top
-    ]
-  , testGroup "documentation"
-    [ "module docs" =:
-      (T.intercalate "\n"
-        [ "# mymath"
-        , ""
-        , "A math module."
-        , ""
-        , "## Functions"
-        , ""
-        , "### factorial (n)"
-        , ""
-        , "Parameters:"
-        , ""
-        , "n"
-        , ":   number for which the factorial is computed (integer)"
-        , ""
-        , "Returns:"
-        , ""
-        , " - factorial (integer)\n"
-        ] @=?
-        render mymath)
     ]
   ]
 
