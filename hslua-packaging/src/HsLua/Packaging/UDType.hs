@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP                 #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-|
@@ -35,6 +36,7 @@ module HsLua.Packaging.UDType
   ) where
 
 import Control.Monad.Except
+import Foreign.Ptr (FunPtr)
 import Data.Maybe (mapMaybe)
 import Data.Map (Map)
 #if !MIN_VERSION_base(4,12,0)
@@ -137,6 +139,7 @@ pushUDMetatable :: LuaError e => UDType e a -> LuaE e ()
 pushUDMetatable ty = do
   created <- newudmetatable (udName ty)
   when created $ do
+    add (metamethodName Shl)      $ pushcfunction hslua_test
     add (metamethodName Index)    $ pushHaskellFunction (indexFunction ty)
     add (metamethodName Newindex) $ pushHaskellFunction (newindexFunction ty)
     add (metamethodName Pairs)    $ pushHaskellFunction (pairsFunction ty)
@@ -148,6 +151,9 @@ pushUDMetatable ty = do
       pushName name
       op
       rawset (nth 3)
+
+foreign import ccall "hslpackaging.c &hslua_test"
+  hslua_test :: FunPtr (State -> IO NumResults)
 
 -- | Pushes the function used to access object properties and methods.
 -- This is expected to be used with the /Index/ operation.

@@ -63,6 +63,7 @@ library
   default-extensions:  LambdaCase
   other-extensions:    DeriveFunctor
                      , OverloadedStrings
+  c-sources:           cbits/hslpackaging.c
   build-depends:       containers        >= 0.5.9    && < 0.7
 
 test-suite test-hslua-packaging
