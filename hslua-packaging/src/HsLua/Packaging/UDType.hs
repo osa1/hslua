@@ -139,12 +139,13 @@ pushUDMetatable :: LuaError e => UDType e a -> LuaE e ()
 pushUDMetatable ty = do
   created <- newudmetatable (udName ty)
   when created $ do
-    add (metamethodName Shl)      $ pushcfunction hslua_test
-    add (metamethodName Index)    $ pushHaskellFunction (indexFunction ty)
+    add (metamethodName Index)    $ pushcfunction hslua_cachedindex_ptr
     add (metamethodName Newindex) $ pushHaskellFunction (newindexFunction ty)
     add (metamethodName Pairs)    $ pushHaskellFunction (pairsFunction ty)
     forM_ (udOperations ty) $ \(op, f) -> do
       add (metamethodName op) $ pushDocumentedFunction f
+    add "getters" $ pushGetters ty
+    add "methods" $ pushMethods ty
   where
     add :: LuaError e => Name -> LuaE e () -> LuaE e ()
     add name op = do
@@ -152,8 +153,25 @@ pushUDMetatable ty = do
       op
       rawset (nth 3)
 
-foreign import ccall "hslpackaging.c &hslua_test"
-  hslua_test :: FunPtr (State -> IO NumResults)
+foreign import ccall "hslpackaging.c &hslua_cachedindex"
+  hslua_cachedindex_ptr :: FunPtr (State -> IO NumResults)
+
+pushGetters :: LuaError e => UDType e a -> LuaE e ()
+pushGetters ty = do
+  newtable
+  void $ flip (Map.traverseWithKey) (udProperties ty) $ \name prop -> do
+    pushName name
+    pushHaskellFunction $ forcePeek (peekUD ty 1) >>= propertyGet prop
+    rawset (nth 3)
+
+pushMethods :: LuaError e => UDType e a -> LuaE e ()
+pushMethods ty = do
+  newtable
+  void $ flip (Map.traverseWithKey) (udMethods ty) $ \name method -> do
+    pushName name
+    pushDocumentedFunction method
+    rawset (nth 3)
+
 
 -- | Pushes the function used to access object properties and methods.
 -- This is expected to be used with the /Index/ operation.

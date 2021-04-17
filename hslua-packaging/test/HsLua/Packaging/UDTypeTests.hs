@@ -54,6 +54,15 @@ tests = testGroup "UDType"
           OK -> forcePeek $ peekIntegral @Int top
           _ -> throwErrorAsException
 
+    , "get number twice" =:
+      8 `shouldBeResultOf` do
+        openlibs
+        pushUD typeFoo $ Foo 4 "d"
+        setglobal "foo"
+        dostring "return foo.num + foo.num" >>= \case
+          OK -> forcePeek $ peekIntegral @Int top
+          _ -> throwErrorAsException
+
     , "modify number" =:
       Foo (-1) "a" `shouldBeResultOf` do
         openlibs
