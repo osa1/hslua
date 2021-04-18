@@ -89,6 +89,14 @@ tests = testGroup "UDType"
         ErrRun <- dostring "foo.str = 'c'"
         throwErrorAsException :: Lua ()
 
+    , "cannot change unknown property" =:
+      "Cannot set unknown property." `shouldBeErrorMessageOf` do
+        openlibs
+        pushUD typeFoo $ Foo 11 "eleven"
+        setglobal "foo"
+        ErrRun <- dostring "foo.does_not_exist = nil"
+        throwErrorAsException :: Lua ()
+
     , "pairs iterates over properties" =:
       ["num", "5", "str", "echo", "show", "function"] `shouldBeResultOf` do
         openlibs
@@ -107,10 +115,21 @@ tests = testGroup "UDType"
           ]
         forcePeek $ peekList peekText top
     ]
+
+  , testGroup "Bar type"
+    [ "Modifying a table modifies the object" =:
+      Bar [7, 8] `shouldBeResultOf` do
+        openlibs
+        pushUD typeBar $ Bar [7]
+        setglobal "bar"
+        OK <- dostring "table.insert(bar.nums, 8)"
+        _ <- getglobal "bar"
+        forcePeek $ peekUD typeBar top
+    ]
   ]
 
 --
--- Sample type
+-- Sample types
 --
 
 data Foo = Foo Int String
@@ -131,4 +150,14 @@ typeFoo = deftype "Foo"
       (peekIntegral, \(Foo _ s) n -> Foo n s)
   , readonly "str" "some string" (pushString, \(Foo _ s) -> s)
   , method show'
+  ]
+
+newtype Bar = Bar [Int]
+  deriving (Eq, Show)
+
+typeBar :: LuaError e => UDType e Bar
+typeBar = deftype "Bar" []
+  [ property "nums" "some numbers"
+    (pushList pushIntegral, \(Bar nums) -> nums)
+    (peekList peekIntegral, \(Bar _) nums -> Bar nums)
   ]

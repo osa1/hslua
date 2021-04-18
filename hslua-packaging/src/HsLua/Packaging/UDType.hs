@@ -48,6 +48,7 @@ import HsLua.Marshalling
 import HsLua.Packaging.Function
 import HsLua.Packaging.Operation
 import qualified Data.Map.Strict as Map
+import qualified HsLua.Core.Unsafe as Unsafe
 import qualified HsLua.Core.Utf8 as Utf8
 
 -- | A userdata type, capturing the behavior of Lua objects that wrap
@@ -84,7 +85,7 @@ deftype name ops members = UDType
 -- | A read- and writable property on a UD object.
 data Property e a = Property
   { propertyGet :: a -> LuaE e NumResults
-  , propertySet :: StackIndex -> a -> LuaE e a
+  , propertySet :: Maybe (StackIndex -> a -> LuaE e a)
   , propertyDescription :: Text
   }
 
@@ -109,7 +110,7 @@ property name desc (push, get) (peek, set) = MemberProperty name $
   { propertyGet = \x -> do
       push $ get x
       return (NumResults 1)
-  , propertySet = \idx x -> do
+  , propertySet = Just $ \idx x -> do
       value  <- forcePeek $ peek idx
       return $ set x value
   , propertyDescription = desc
@@ -117,14 +118,18 @@ property name desc (push, get) (peek, set) = MemberProperty name $
 
 -- | Creates a read-only object property. Attempts to set the value will
 -- cause an error.
-readonly :: LuaError e
-         => Name                 -- ^ property name
+readonly :: Name                 -- ^ property name
          -> Text                 -- ^ property description
          -> (Pusher e b, a -> b) -- ^ how to get the property value
          -> Member e a
-readonly name desc getter = property name desc getter $
-  let msg = "'" <> fromName name <> "' is a read-only property."
-  in (const (failPeek msg), const)
+readonly name desc (push, get) = MemberProperty name $
+  Property
+  { propertyGet = \x -> do
+      push $ get x
+      return (NumResults 1)
+  , propertySet = Nothing
+  , propertyDescription = desc
+  }
 
 -- | Declares a new object operation from a documented function.
 operation :: Operation             -- ^ the kind of operation
@@ -139,12 +144,13 @@ pushUDMetatable :: LuaError e => UDType e a -> LuaE e ()
 pushUDMetatable ty = do
   created <- newudmetatable (udName ty)
   when created $ do
-    add (metamethodName Index)    $ pushcfunction hslua_cachedindex_ptr
-    add (metamethodName Newindex) $ pushHaskellFunction (newindexFunction ty)
+    add (metamethodName Index)    $ pushcfunction hslua_udindex_ptr
+    add (metamethodName Newindex) $ pushcfunction hslua_udnewindex_ptr
     add (metamethodName Pairs)    $ pushHaskellFunction (pairsFunction ty)
     forM_ (udOperations ty) $ \(op, f) -> do
       add (metamethodName op) $ pushDocumentedFunction f
     add "getters" $ pushGetters ty
+    add "setters" $ pushSetters ty
     add "methods" $ pushMethods ty
   where
     add :: LuaError e => Name -> LuaE e () -> LuaE e ()
@@ -153,53 +159,65 @@ pushUDMetatable ty = do
       op
       rawset (nth 3)
 
-foreign import ccall "hslpackaging.c &hslua_cachedindex"
-  hslua_cachedindex_ptr :: FunPtr (State -> IO NumResults)
+-- | Retrieves a key from a Haskell-data holding userdata value.
+--
+-- Does the following, in order, and returns the first non-nil result:
+--
+--   - Checks the userdata's uservalue table for the given key;
+--
+--   - Looks up a @getter@ for the key and calls it with the userdata
+--     and key as arguments;
+--
+--   - Looks up the key in the table in the @methods@ metafield.
+foreign import ccall "hslpackaging.c &hslua_udindex"
+  hslua_udindex_ptr :: FunPtr (State -> IO NumResults)
 
+-- | Sets a new value in the userdata caching table via a setter
+-- functions.
+--
+-- The actual assignment is performed by a setter function stored in the
+-- @setter@ metafield. Throws an error if no setter function can be
+-- found.
+foreign import ccall "hslpackaging.c &hslua_udnewindex"
+  hslua_udnewindex_ptr :: FunPtr (State -> IO NumResults)
+
+-- | Sets a value in the userdata's caching table (uservalue). Takes the
+-- same arguments as a @__newindex@ function.
+foreign import ccall "hslpackaging.c &hslua_udsetter"
+  hslua_udsetter_ptr :: FunPtr (State -> IO NumResults)
+
+-- | Throws an error nothing that the given key is read-only.
+foreign import ccall "hslpackaging.c &hslua_udreadonly"
+  hslua_udreadonly_ptr :: FunPtr (State -> IO NumResults)
+
+-- | Pushes the metatable's @getters@ field table.
 pushGetters :: LuaError e => UDType e a -> LuaE e ()
 pushGetters ty = do
   newtable
-  void $ flip (Map.traverseWithKey) (udProperties ty) $ \name prop -> do
+  void $ flip Map.traverseWithKey (udProperties ty) $ \name prop -> do
     pushName name
     pushHaskellFunction $ forcePeek (peekUD ty 1) >>= propertyGet prop
     rawset (nth 3)
 
+-- | Pushes the metatable's @setters@ field table.
+pushSetters :: LuaError e => UDType e a -> LuaE e ()
+pushSetters ty = do
+  newtable
+  void $ flip Map.traverseWithKey (udProperties ty) $ \name prop -> do
+    pushName name
+    pushcfunction $ case propertySet prop of
+      Just _  -> hslua_udsetter_ptr
+      Nothing -> hslua_udreadonly_ptr
+    rawset (nth 3)
+
+-- | Pushes the metatable's @methods@ field table.
 pushMethods :: LuaError e => UDType e a -> LuaE e ()
 pushMethods ty = do
   newtable
-  void $ flip (Map.traverseWithKey) (udMethods ty) $ \name method -> do
+  void $ flip Map.traverseWithKey (udMethods ty) $ \name fn -> do
     pushName name
-    pushDocumentedFunction method
+    pushDocumentedFunction fn
     rawset (nth 3)
-
-
--- | Pushes the function used to access object properties and methods.
--- This is expected to be used with the /Index/ operation.
-indexFunction :: LuaError e => UDType e a -> LuaE e NumResults
-indexFunction ty = do
-  x    <- forcePeek $ peekUD ty (nthBottom 1)
-  name <- forcePeek $ peekName (nthBottom 2)
-  case Map.lookup name (udProperties ty) of
-    Just p -> propertyGet p x
-    Nothing -> case Map.lookup name (udMethods ty) of
-                 Just m -> 1 <$ pushDocumentedFunction m
-                 Nothing -> failLua $
-                            "no key " ++ Utf8.toString (fromName name)
-
--- | Pushes the function used to modify object properties.
--- This is expected to be used with the /Newindex/ operation.
-newindexFunction :: LuaError e => UDType e a -> LuaE e NumResults
-newindexFunction ty = do
-  x     <- forcePeek $ peekUD ty (nthBottom 1)
-  name  <- forcePeek $ peekName (nthBottom 2)
-  case Map.lookup name (udProperties ty) of
-    Just p -> do
-      newx <- propertySet p (nthBottom 3) x
-      success <- putuserdata (nthBottom 1) (udName ty) newx
-      if success
-        then return (NumResults 0)
-        else failLua "Could not set userdata value."
-    Nothing -> failLua $ "no key " ++ Utf8.toString (fromName name)
 
 -- | Pushes the function used to iterate over the object's key-value
 -- pairs in a generic *for* loop.
@@ -227,13 +245,41 @@ pushUD ty x = do
   setmetatable (nth 2)
 
 -- | Retrieves a userdata value of the given type.
-peekUD :: UDType e a -> Peeker e a
-peekUD ty = do
+peekUD :: LuaError e => UDType e a -> Peeker e a
+peekUD ty idx = do
   let name = udName ty
-  reportValueOnFailure name (`fromuserdata` name)
+  x <- reportValueOnFailure name (`fromuserdata` name) idx
+  liftLua $ do
+    getuservalue idx >>= \case
+      TypeTable -> do
+        pushnil
+        setProperties (udProperties ty) x
+      _ -> do
+        return x
+
+setProperties :: LuaError e => Map Name (Property e a) -> a -> LuaE e a
+setProperties props x = do
+  hasNext <- Unsafe.next (nth 2)
+  if not hasNext
+    then return x
+    else ltype (nth 2) >>= \case
+      TypeString -> do
+        propName <- forcePeek $ peekName (nth 2)
+        case Map.lookup propName props of
+          Nothing -> pop 1 *> setProperties props x
+          Just prop -> case propertySet prop of
+            Nothing -> failLua $ "Trying to set read-only property "
+                       ++ Utf8.toString (fromName propName)
+            Just setter -> do
+              x' <- setter top x
+              pop 1
+              setProperties props x'
+      _ -> x <$ pop 1
+
 
 -- | Defines a function parameter that takes the given type.
-udparam :: UDType e a      -- ^ expected type
+udparam :: LuaError e
+        => UDType e a      -- ^ expected type
         -> Text            -- ^ parameter name
         -> Text            -- ^ parameter description
         -> Parameter e a
