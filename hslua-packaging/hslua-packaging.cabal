@@ -59,6 +59,7 @@ library
                      , HsLua.Packaging.Rendering
                      , HsLua.Packaging.Types
                      , HsLua.Packaging.UDType
+                     , HsLua.Packaging.UDSumType
   hs-source-dirs:      src
   default-extensions:  LambdaCase
   other-extensions:    DeriveFunctor

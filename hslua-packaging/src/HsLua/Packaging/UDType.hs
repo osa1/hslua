@@ -30,8 +30,8 @@ module HsLua.Packaging.UDType
   , pushUD
   , udparam
     -- * Helper types for building
-  , Member
-  , Property
+  , Member (..)
+  , Property (..)
   , Operation
   ) where
 
